@@ -100,14 +100,33 @@ def plus(left, right, stack, sym_list):
         tmp_stack = copy(stack)
         res2 = solve(tmp_stack, tmp)
         stack.pop()
+        mult_max = -1
+        if sym_list[0].Symbol == '*':
+            mult_max = max(concatenate(left, right).Max, concatenate(right, left).Max)
         if res1.Max > res2.Max:
-            return left
+            maximum = max(left.Max, mult_max)
+            return Symbol(Symbol=left.Symbol,
+                          Type=left.Type,
+                          LCloser=left.LCloser,
+                          RCloser=left.RCloser,
+                          LCounter=left.LCounter,
+                          RCounter=left.RCounter,
+                          Max=maximum
+                          )
         else:
-            return right
+            maximum = max(right.Max, mult_max)
+            return Symbol(Symbol=right.Symbol,
+                          Type=right.Type,
+                          LCloser=right.LCloser,
+                          RCloser=right.RCloser,
+                          LCounter=right.LCounter,
+                          RCounter=right.RCounter,
+                          Max=maximum
+                          )
 
 
 def multiply(element, stack, sym_list):
-    if len(element.Symbol) == element.LCounter and len(element.Symbol) == element.RCounter:
+    if int(element.Symbol) == element.LCounter and int(element.Symbol) == element.RCounter and element.Symbol != '0':
         print("INF")
         exit(0)
     elif element.LCounter + element.RCounter > element.Max:
@@ -132,10 +151,10 @@ def multiply(element, stack, sym_list):
 
 
 def solve(stack, symbols_list):
-    list_cpy = copy(symbols_list)
-    for symbol in symbols_list:
+    n = len(symbols_list)
+    for i in range(n):
         try:
-            list_cpy.pop(0)
+            symbol = symbols_list.pop(0)
             if symbol.Type == Type.LETTER or symbol.Type == Type.LITERAL:
                 stack.append(symbol)
             elif symbol.Type == Type.OPERATOR:
@@ -146,10 +165,10 @@ def solve(stack, symbols_list):
                 elif symbol.Symbol == '+':
                     right_sym = stack.pop()
                     left_sym = stack.pop()
-                    stack.append(plus(left_sym, right_sym, stack, list_cpy))
+                    stack.append(plus(left_sym, right_sym, stack, symbols_list))
                 elif symbol.Symbol == '*':
                     last_sym = stack.pop()
-                    stack.append(multiply(last_sym, stack, list_cpy))
+                    stack.append(multiply(last_sym, stack, symbols_list))
         except IndexError:
             print('ERROR: inconsistent regular expression')
             exit(0)
@@ -163,6 +182,6 @@ def solve(stack, symbols_list):
 if __name__ == "__main__":
     expression, x = input().split()
     symbols_list = convert(expression, x)
-    stack = deque()
+    stack = []
     a = solve(stack, symbols_list)
     print(a.Max)
