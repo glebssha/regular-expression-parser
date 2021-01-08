@@ -1,8 +1,5 @@
-# Даны α и буква x. Найти максимальное k, такое что в L есть слова, содержащие
-# подслово x^k .
 from enum import IntEnum
-from collections import namedtuple, deque
-from copy import copy
+import math
 
 alphabet = {'a', 'b', 'c'}
 literal = {'1'}
@@ -10,178 +7,115 @@ operators = {'*', '.', '+'}
 
 
 class Type(IntEnum):
-    LETTER = 1
-    OPERATOR = 2
-    LITERAL = 3
+    infix = 0
+    prefix = 1
+    suffix = 2
+    inf = 3
+    max_len = 4
+    min_len = 5
 
 
-Symbol = namedtuple('Symbol', ['Symbol', 'Type', 'LCloser', 'RCloser', 'LCounter', 'RCounter', 'Max'])
+class Solve:
+    def __init__(self):
+        self.dp = []
 
+    def concatenate(self):
+        infix_2, infix_1 = self.dp[Type.infix].pop(), self.dp[Type.infix].pop()
+        prefix_2, prefix_1 = self.dp[Type.prefix].pop(), self.dp[Type.prefix].pop()
+        suffix_2, suffix_1 = self.dp[Type.suffix].pop(), self.dp[Type.suffix].pop()
+        inf2, inf1 = self.dp[Type.inf].pop(), self.dp[Type.inf].pop()
+        max_len2, max_len1 = self.dp[Type.max_len].pop(), self.dp[Type.max_len].pop()
+        min_len2, min_len1 = self.dp[Type.min_len].pop(), self.dp[Type.min_len].pop()
 
-def convert(expression, s):
-    result = []
-    for value in expression:
-        if value in alphabet:
-            if value == s:
-                result.append(Symbol(Symbol='1', Type=Type.LETTER, LCloser=0, RCloser=0, LCounter=1, RCounter=1, Max=1))
+        self.dp[Type.infix].append(max(max(infix_1, infix_2), prefix_2 + suffix_1))
+        if min_len1 and min_len2:
+            self.dp[Type.inf].append(inf1 and inf2)
+        else:
+            self.dp[Type.inf].append(inf1 or inf2)
+        self.dp[Type.max_len].append(max_len1 + max_len2)
+        self.dp[Type.min_len].append(min_len1 + min_len2)
+        if inf1 and inf2:
+            self.dp[Type.prefix].append(max_len1 + max_len2)
+            self.dp[Type.suffix].append(max_len1 + max_len2)
+        else:
+            if inf1:
+                self.dp[Type.prefix].append(prefix_1 + prefix_2)
             else:
-                result.append(Symbol(Symbol='0', Type=Type.LETTER, LCloser=1, RCloser=1, LCounter=0, RCounter=0, Max=0))
-            continue
-        elif value in operators:
-            result.append(Symbol(Symbol=value, Type=Type.OPERATOR, LCloser=0, RCloser=0, LCounter=0, RCounter=0, Max=0))
-            continue
-        elif value in literal:
-            result.append(Symbol(Symbol='0', Type=Type.LITERAL, LCloser=1, RCloser=1, LCounter=0, RCounter=0, Max=0))
-            continue
-        else:
-            print(f'ERROR: UNKNOWN SYMBOL {value}')
-            exit(0)
-    return result
+                if min_len1 == 0:
+                    self.dp[Type.prefix].append(max(prefix_1, prefix_2))
+                else:
+                    self.dp[Type.prefix].append(prefix_1)
+            if inf2:
+                self.dp[Type.suffix].append(suffix_2 + suffix_1)
+            else:
+                if min_len2 == 0:
+                    self.dp[Type.suffix].append(max(suffix_1, suffix_2))
+                else:
+                    self.dp[Type.suffix].append(suffix_2)
 
+    def plus(self):
+        self.dp[Type.infix].append(max(self.dp[Type.infix].pop(), self.dp[Type.infix].pop()))
+        self.dp[Type.prefix].append(max(self.dp[Type.prefix].pop(), self.dp[Type.prefix].pop()))
+        self.dp[Type.suffix].append(max(self.dp[Type.suffix].pop(), self.dp[Type.suffix].pop()))
+        self.dp[Type.inf].append(self.dp[Type.inf].pop() or self.dp[Type.inf].pop())
+        self.dp[Type.max_len].append(max(self.dp[Type.max_len].pop(), self.dp[Type.max_len].pop()))
+        self.dp[Type.min_len].append(min(self.dp[Type.min_len].pop(), self.dp[Type.min_len].pop()))
 
-def concatenate(left, right):
-    maximum = max(left.Max, right.Max)
-    if left.Type == Type.LITERAL:
-        return right
-    if right.Type == Type.LITERAL:
-        return left
-    if left.RCloser == right.LCloser:
-        max_center = left.RCounter + right.LCounter
-        result = left.Symbol[0:-1] + f'{max_center}' + right.Symbol[1:]
-        if result.count('0') > 1:
-            result = result[0:result.find('0')] + result[result.rfind('0'):]
-            maximum = max(maximum, max_center)
-            return Symbol(Symbol=result,
-                          Type=Type.LETTER,
-                          LCloser=left.LCloser,
-                          RCloser=right.RCloser,
-                          LCounter=left.LCounter,
-                          RCounter=right.RCounter,
-                          Max=maximum
-                          )
-        maximum = max(max_center, maximum)
-        res_l_counter = (left.Symbol.count('0') == 0) * right.LCounter + left.LCounter
-        res_r_counter = (right.Symbol.count('0') == 0) * left.RCounter + right.RCounter
-        return Symbol(Symbol=result,
-                      Type=Type.LETTER,
-                      LCloser=left.LCloser,
-                      RCloser=right.RCloser,
-                      LCounter=res_l_counter,
-                      RCounter=res_r_counter,
-                      Max=maximum
-                      )
-    else:
-        result = (left.Symbol + right.Symbol)
-        if result.count('0') > 1:
-            result = result[0:result.find('0')] + result[result.rfind('0'):]
-        return Symbol(Symbol=result,
-                      Type=Type.LETTER,
-                      LCloser=left.LCloser,
-                      RCloser=right.RCloser,
-                      LCounter=left.LCounter,
-                      RCounter=right.RCounter,
-                      Max=maximum
-                      )
+    def multiply(self):
+        tmp = self.dp[Type.suffix][len(self.dp[Type.suffix]) - 1]
+        tmp += self.dp[Type.prefix][len(self.dp[Type.prefix]) - 1]
+        self.dp[Type.infix].append(max(self.dp[Type.infix].pop(), tmp))
+        self.dp[Type.min_len].pop()
+        self.dp[Type.min_len].append(0)
+        self.dp[Type.max_len].pop()
+        self.dp[Type.max_len].append(math.inf)
 
+    def solve(self, expression, x):
+        self.dp = [[] for i in range(6)]
+        for value in expression:
+            if value in alphabet:
+                if value == x:
+                    for i in range(6):
+                        self.dp[i].append(1)
+                else:
+                    for i in range(4):
+                        self.dp[i].append(0)
+                    self.dp[Type.max_len].append(1)
+                    self.dp[Type.min_len].append(1)
 
-def plus(left, right, stack, sym_list):
-    if left.Symbol == '0' and left.Type != Type.LITERAL:
-        return right
-    elif right.Symbol == '0' and right.Type != Type.LITERAL:
-        return left
-    else:
-        stack.append(left)
-        tmp = copy(sym_list)
-        tmp_stack = copy(stack)
-        res1 = solve(tmp_stack, tmp)
-        stack.pop()
-        stack.append(right)
-        tmp = copy(sym_list)
-        tmp_stack = copy(stack)
-        res2 = solve(tmp_stack, tmp)
-        stack.pop()
-        mult_max = -1
-        if sym_list[0].Symbol == '*':
-            mult_max = max(concatenate(left, right).Max, concatenate(right, left).Max)
-        if res1.Max > res2.Max:
-            maximum = max(left.Max, mult_max)
-            return Symbol(Symbol=left.Symbol,
-                          Type=left.Type,
-                          LCloser=left.LCloser,
-                          RCloser=left.RCloser,
-                          LCounter=left.LCounter,
-                          RCounter=left.RCounter,
-                          Max=maximum
-                          )
-        else:
-            maximum = max(right.Max, mult_max)
-            return Symbol(Symbol=right.Symbol,
-                          Type=right.Type,
-                          LCloser=right.LCloser,
-                          RCloser=right.RCloser,
-                          LCounter=right.LCounter,
-                          RCounter=right.RCounter,
-                          Max=maximum
-                          )
-
-
-def multiply(element, stack, sym_list):
-    if int(element.Symbol) == element.LCounter and int(element.Symbol) == element.RCounter and element.Symbol != '0':
-        print("INF")
-        exit(0)
-    elif element.LCounter + element.RCounter > element.Max:
-        element = concatenate(element, element)
-
-    stack.append(element)
-    tmp = copy(sym_list)
-    tmp_stack = copy(stack)
-    res1 = solve(tmp_stack, tmp)
-    stack.pop()
-    blank_element = Symbol(Symbol='0', Type=Type.LITERAL, LCloser=1, RCloser=1, LCounter=0, RCounter=0,
-                           Max=0)
-    stack.append(blank_element)
-    tmp = copy(sym_list)
-    tmp_stack = copy(stack)
-    res2 = solve(tmp_stack, tmp)
-    stack.pop()
-    if res1.Max > res2.Max:
-        return element
-    else:
-        return blank_element
-
-
-def solve(stack, symbols_list):
-    n = len(symbols_list)
-    for i in range(n):
-        try:
-            symbol = symbols_list.pop(0)
-            if symbol.Type == Type.LETTER or symbol.Type == Type.LITERAL:
-                stack.append(symbol)
-            elif symbol.Type == Type.OPERATOR:
-                if symbol.Symbol == '.':
-                    right_sym = stack.pop()
-                    left_sym = stack.pop()
-                    stack.append(concatenate(left_sym, right_sym))
-                elif symbol.Symbol == '+':
-                    right_sym = stack.pop()
-                    left_sym = stack.pop()
-                    stack.append(plus(left_sym, right_sym, stack, symbols_list))
-                elif symbol.Symbol == '*':
-                    last_sym = stack.pop()
-                    stack.append(multiply(last_sym, stack, symbols_list))
-        except IndexError:
+                    continue
+            elif value in operators:
+                if value == '+':
+                    if len(self.dp[Type.infix]) < 2:
+                        print('ERROR: inconsistent regular expression')
+                        exit(0)
+                    self.plus()
+                elif value == '.':
+                    if len(self.dp[Type.infix]) < 2:
+                        print('ERROR: inconsistent regular expression')
+                        exit(0)
+                    self.concatenate()
+                elif value == '*':
+                    if len(self.dp[Type.infix]) < 1:
+                        print('ERROR: inconsistent regular expression')
+                        exit(0)
+                    if self.dp[Type.inf][len(self.dp[Type.inf]) - 1]:
+                        return "INF"
+                    self.multiply()
+                    continue
+            elif value in literal:
+                for i in range(6):
+                    self.dp[i].append(0)
+                continue
+            else:
+                print(f'ERROR: UNKNOWN SYMBOL {value}')
+                exit(0)
+        if len(self.dp[Type.infix]) > 1:
             print('ERROR: inconsistent regular expression')
             exit(0)
-    if len(stack) > 1:
-        print('ERROR: inconsistent regular expression')
-        exit(0)
-
-    return stack.pop()
+        return self.dp[Type.infix][0]
 
 
 if __name__ == "__main__":
     expression, x = input().split()
-    symbols_list = convert(expression, x)
-    stack = []
-    a = solve(stack, symbols_list)
-    print(a.Max)
+    print(Solve().solve(expression, x))
