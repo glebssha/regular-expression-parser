@@ -28,15 +28,19 @@ class Solve:
         min_len2, min_len1 = self.dp[Type.min_len].pop(), self.dp[Type.min_len].pop()
 
         self.dp[Type.infix].append(max(max(infix_1, infix_2), prefix_2 + suffix_1))
-        if min_len1 and min_len2:
-            self.dp[Type.inf].append(inf1 and inf2)
+        if inf1 and inf2:
+            self.dp[Type.inf].append(1)
+        elif (inf1 and min_len2 == 0) or (inf2 and min_len1 == 0):
+            self.dp[Type.inf].append(1)
         else:
-            self.dp[Type.inf].append(inf1 or inf2)
+            self.dp[Type.inf].append(0)
+
         self.dp[Type.max_len].append(max_len1 + max_len2)
         self.dp[Type.min_len].append(min_len1 + min_len2)
+
         if inf1 and inf2:
-            self.dp[Type.prefix].append(max_len1 + max_len2)
-            self.dp[Type.suffix].append(max_len1 + max_len2)
+            self.dp[Type.prefix].append(prefix_1 + prefix_2)
+            self.dp[Type.suffix].append(suffix_1 + suffix_2)
         else:
             if inf1:
                 self.dp[Type.prefix].append(prefix_1 + prefix_2)
@@ -57,7 +61,8 @@ class Solve:
         self.dp[Type.infix].append(max(self.dp[Type.infix].pop(), self.dp[Type.infix].pop()))
         self.dp[Type.prefix].append(max(self.dp[Type.prefix].pop(), self.dp[Type.prefix].pop()))
         self.dp[Type.suffix].append(max(self.dp[Type.suffix].pop(), self.dp[Type.suffix].pop()))
-        self.dp[Type.inf].append(self.dp[Type.inf].pop() or self.dp[Type.inf].pop())
+        inf2, inf1 = self.dp[Type.inf].pop(), self.dp[Type.inf].pop()
+        self.dp[Type.inf].append(inf1 or inf2)
         self.dp[Type.max_len].append(max(self.dp[Type.max_len].pop(), self.dp[Type.max_len].pop()))
         self.dp[Type.min_len].append(min(self.dp[Type.min_len].pop(), self.dp[Type.min_len].pop()))
 
