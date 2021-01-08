@@ -30,7 +30,7 @@ class Solve:
         self.dp[Type.infix].append(max(max(infix_1, infix_2), prefix_2 + suffix_1))
         if inf1 and inf2:
             self.dp[Type.inf].append(1)
-        elif (inf1 and max_len2 == 0) or (inf2 and max_len1 == 0):
+        elif (inf1 and min_len2 == 0) or (inf2 and min_len1 == 0):
             self.dp[Type.inf].append(1)
         else:
             self.dp[Type.inf].append(0)
