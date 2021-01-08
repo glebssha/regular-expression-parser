@@ -37,18 +37,18 @@ class Solve:
 
         self.dp[Type.max_len].append(max_len1 + max_len2)
         self.dp[Type.min_len].append(min_len1 + min_len2)
-        if inf1 and inf2:
+        if inf1 and min_len1 == suffix_1 == prefix_1 and inf2 and min_len2 == suffix_2 == prefix_2:
             self.dp[Type.prefix].append(prefix_1 + prefix_2)
             self.dp[Type.suffix].append(suffix_1 + suffix_2)
         else:
-            if inf1:
+            if inf1 and min_len1 == suffix_1 == prefix_1:
                 self.dp[Type.prefix].append(prefix_1 + prefix_2)
             else:
                 if min_len1 == 0:
                     self.dp[Type.prefix].append(max(prefix_1, prefix_2))
                 else:
                     self.dp[Type.prefix].append(prefix_1)
-            if inf2:
+            if inf2 and min_len2 == suffix_2 == prefix_2:
                 self.dp[Type.suffix].append(suffix_2 + suffix_1)
             else:
                 if min_len2 == 0:
